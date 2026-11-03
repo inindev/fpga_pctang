@@ -486,7 +486,7 @@ i8088 u_cpu
     .CLK(clk_cpu),
 
     .RESET(reset_cpu),
-    .READY(processor_ready && ~pause_core),
+    .READY(processor_ready && ~pause_core && ~overlay),     // Pause key, or menu shown
     .NMI(1'b0),
     .INTR(interrupt_to_cpu),
 
@@ -646,7 +646,8 @@ cga2hdmi cga2hdmi_inst(
 
     .overlay(overlay), .overlay_x(overlay_x), .overlay_y(overlay_y), .overlay_color(overlay_color),
 
-    .audio_l({speaker_out, 13'd0}), .audio_r({speaker_out, 13'd0}),
+    // the PIT keeps the speaker going while the CPU is paused by the menu
+    .audio_l({speaker_out & ~overlay, 13'd0}), .audio_r({speaker_out & ~overlay, 13'd0}),
 
     .clk_pixel(clk_pixel),
     .clk_5x_pixel(clk_5x_pixel),
