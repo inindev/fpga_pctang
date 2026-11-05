@@ -112,13 +112,15 @@ begin
     end
 end
 
-// TODO: need to use async fifo to cross clock domains
-reg [15:0] audio_sample_word [1:0], audio_sample_word0 [1:0];
+// Audio into clk_pixel, through a two-flop synchronizer per bit (first stage *_meta, see
+// pctang.sdc). The samples carry only the PC speaker, one bit, so no bits can tear; a
+// multi-bit source would need an async FIFO.
+reg [15:0] audio_sample_word [1:0], audio_meta [1:0];
 always @(posedge clk_pixel) begin
-    audio_sample_word0[0] <= audio_l;
-    audio_sample_word[0] <= audio_sample_word0[0];
-    audio_sample_word0[1] <= audio_r;
-    audio_sample_word[1] <= audio_sample_word0[1];
+    audio_meta[0] <= audio_l;
+    audio_sample_word[0] <= audio_meta[0];
+    audio_meta[1] <= audio_r;
+    audio_sample_word[1] <= audio_meta[1];
 end
 
 //
@@ -137,9 +139,9 @@ assign mem_portB_addr = yy * 640 + xx;
 localparam XSTART = (1280 - 960) / 2;   // 960:720 = 4:3
 localparam XSTOP = (1280 + 960) / 2;
 
-reg overlay_r, overlay_rr;
+reg overlay_meta, overlay_r;     // two-flop synchronizer into clk_pixel
 always @(posedge clk_pixel) begin
-    overlay_r <= overlay; overlay_rr <= overlay_r;
+    overlay_meta <= overlay; overlay_r <= overlay_meta;
 end
 
 // address calculation
@@ -244,7 +246,7 @@ wire [23:0] menu_rgb = {overlay_color[4:0],   overlay_color[4:2],
 always @(posedge clk_pixel) begin
     reg [23:0] game;
     game = active ? cga_to_rgb(mem_portB_rdata) : 24'h000000;   // IRGB to RGB8
-    if (overlay_rr)
+    if (overlay_r)
         rgb <= menu_win5 && overlay_color != 15'd0 ? menu_rgb
              : {2'b0, game[23:18], 2'b0, game[15:10], 2'b0, game[7:2]};
     else

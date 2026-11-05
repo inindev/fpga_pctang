@@ -20,6 +20,7 @@ if {$dev eq "console60k"} {
 set_option -output_base_name pctang_${dev}
 
 add_file -type cst "src/boards/console.cst"
+add_file -type sdc "src/pctang.sdc"
 
 add_file -type verilog "src/8088/biu_max.v"
 add_file -type verilog "src/8088/eu_rom.v"
