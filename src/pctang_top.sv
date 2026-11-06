@@ -70,6 +70,8 @@ always_ff @(posedge clk_sys) begin
 end
 `endif
 wire overlay;       // default 1
+wire osd_strip;     // with overlay: volume bar strip, the PC keeps running
+wire menu = overlay & ~osd_strip;   // menu shown, PC paused
 logic loading_bios;
 wire reset_cpu = loading_bios;
 logic [19:0] reset_cnt = 20'hFFFFF;
@@ -486,7 +488,7 @@ i8088 u_cpu
     .CLK(clk_cpu),
 
     .RESET(reset_cpu),
-    .READY(processor_ready && ~pause_core && ~overlay),     // Pause key, or menu shown
+    .READY(processor_ready && ~pause_core && ~menu),        // Pause key, or menu shown
     .NMI(1'b0),
     .INTR(interrupt_to_cpu),
 
@@ -581,6 +583,7 @@ end
 
 ////////////////// io to bl616 //////////////////
 
+wire [3:0] volume;              // master volume, iosys -> HDMI encoder
 `ifndef VERILATOR
 wire [7:0] overlay_x;
 wire [7:0] overlay_y;
@@ -590,9 +593,11 @@ iosys_bl616 #(.COLOR_LOGO(15'b10000_10000_01000), .FREQ(50_000_000), .CORE_ID(6)
     sys_inst (
     .clk(clk_sys), .hclk(clk_pixel), .resetn(1'b1),
 
-    .overlay(overlay), .overlay_x(overlay_x), .overlay_y(overlay_y), .overlay_color(overlay_color),
+    .overlay(overlay), .osd_strip(osd_strip),
+    .overlay_x(overlay_x), .overlay_y(overlay_y), .overlay_color(overlay_color),
     .joy1(joy1_btns | joy1_usb), .joy2(joy2_btns | joy2_usb),
     .hid1(joy1_mcu), .hid2(joy2_mcu),
+    .volume(volume),
     .uart_tx(UART_TXD), .uart_rx(UART_RXD),
 
     .mgmt_address(mgmt_address),        // fdd data
@@ -644,10 +649,12 @@ cga2hdmi cga2hdmi_inst(
     .vblank(VBlank),
     .color(color_cga),
 
-    .overlay(overlay), .overlay_x(overlay_x), .overlay_y(overlay_y), .overlay_color(overlay_color),
+    .overlay(overlay), .osd_strip(osd_strip),
+    .overlay_x(overlay_x), .overlay_y(overlay_y), .overlay_color(overlay_color),
 
     // the PIT keeps the speaker going while the CPU is paused by the menu
-    .audio_l({speaker_out & ~overlay, 13'd0}), .audio_r({speaker_out & ~overlay, 13'd0}),
+    .audio_l({speaker_out & ~menu, 13'd0}), .audio_r({speaker_out & ~menu, 13'd0}),
+    .volume(volume),
 
     .clk_pixel(clk_pixel),
     .clk_5x_pixel(clk_5x_pixel),
