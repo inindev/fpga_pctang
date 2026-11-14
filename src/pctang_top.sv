@@ -37,7 +37,7 @@ module pctang_top (
 
 	// SDRAM
     output O_sdram_clk,
-    output O_sdram_cke,
+    // no O_sdram_cke: the boards wire CKE high, and an unplaced output would be put on a free pin
     output O_sdram_cs_n,            // chip select
     output O_sdram_cas_n,           // columns address select
     output O_sdram_ras_n,           // row address select
@@ -442,7 +442,7 @@ CHIPSET #(.clk_rate(cur_rate)) u_CHIPSET
     .initilized_sdram                   (initilized_sdram),
     .sdram_clock                        (clk_sys),
     .sdram_address                      (O_sdram_addr),
-    .sdram_cke                          (O_sdram_cke),
+    .sdram_cke                          (),
     .sdram_cs                           (O_sdram_cs_n),
     .sdram_ras                          (O_sdram_ras_n),
     .sdram_cas                          (O_sdram_cas_n),
